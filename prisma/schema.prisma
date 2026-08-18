@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum IdeaStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  ideas        Idea[]
+}
+
+model Idea {
+  id             String     @id @default(cuid())
+  title          String
+  description    String
+  status         IdeaStatus @default(DRAFT)
+  aiBrief        String?
+  aiBriefVersion String?
+  ownerId        String
+  owner          User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  jobs           BriefJob[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([ownerId, status])
+}
+
+model BriefJob {
+  id            String    @id @default(cuid())
+  ideaId        String
+  idea          Idea      @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  status        JobStatus @default(QUEUED)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  promptVersion String
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([ideaId, status])
+}
