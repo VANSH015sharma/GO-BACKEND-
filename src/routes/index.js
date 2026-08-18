@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../middleware/validate.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { apiRateLimiter, authRateLimiter } from '../middleware/rate-limit.js';
 import { login, me, register } from '../modules/auth/auth.controller.js';
 import { loginSchema, registerSchema } from '../modules/auth/auth.schema.js';
 import {
@@ -20,14 +21,14 @@ router.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-router.post('/auth/register', validate(registerSchema), register);
-router.post('/auth/login', validate(loginSchema), login);
-router.get('/me', requireAuth, me);
+router.post('/auth/register', authRateLimiter, validate(registerSchema), register);
+router.post('/auth/login', authRateLimiter, validate(loginSchema), login);
+router.get('/me', apiRateLimiter, requireAuth, me);
 
-router.post('/ideas', requireAuth, validate(createIdeaSchema), createIdeaHandler);
-router.get('/ideas', requireAuth, listIdeasHandler);
-router.get('/ideas/:id', requireAuth, validate(ideaIdSchema), getIdeaHandler);
-router.patch('/ideas/:id/status', requireAuth, validate(updateStatusSchema), updateIdeaStatusHandler);
-router.post('/ideas/:id/brief', requireAuth, validate(ideaIdSchema), requestBriefHandler);
+router.post('/ideas', apiRateLimiter, requireAuth, validate(createIdeaSchema), createIdeaHandler);
+router.get('/ideas', apiRateLimiter, requireAuth, listIdeasHandler);
+router.get('/ideas/:id', apiRateLimiter, requireAuth, validate(ideaIdSchema), getIdeaHandler);
+router.patch('/ideas/:id/status', apiRateLimiter, requireAuth, validate(updateStatusSchema), updateIdeaStatusHandler);
+router.post('/ideas/:id/brief', apiRateLimiter, requireAuth, validate(ideaIdSchema), requestBriefHandler);
 
-router.get('/jobs/:id', requireAuth, requireRole('USER', 'ADMIN'), validate(jobIdSchema), getJobHandler);
+router.get('/jobs/:id', apiRateLimiter, requireAuth, requireRole('USER', 'ADMIN'), validate(jobIdSchema), getJobHandler);
